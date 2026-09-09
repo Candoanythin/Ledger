@@ -1,0 +1,386 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#163e38">
+  <meta name="description" content="인터넷 연결 없이 사용하는 개인 복식부기 가계부">
+  <link rel="manifest" href="manifest.webmanifest">
+  <title>잔고일기 · 오프라인 복식 가계부</title>
+  <style>
+    :root {
+      --ink:#16302c; --muted:#6d7e7a; --paper:#f6f7f3; --surface:#fff;
+      --line:#dce5df; --brand:#176b5c; --brand-dark:#114c42; --accent:#e9a73c;
+      --danger:#bd3d3d; --income:#18735d; --expense:#b84d45; --shadow:0 12px 30px rgba(26,53,45,.09);
+      font-family: Pretendard, "Noto Sans KR", system-ui, sans-serif;
+    }
+    *{box-sizing:border-box} body{margin:0;background:var(--paper);color:var(--ink);font-size:15px;line-height:1.45}
+    button,input,select,textarea{font:inherit} button{cursor:pointer;border:0} .hidden{display:none!important}
+    .app{max-width:740px;margin:auto;min-height:100dvh;padding-bottom:92px}
+    header{background:linear-gradient(135deg,var(--brand-dark),var(--brand));color:#fff;padding:calc(18px + env(safe-area-inset-top)) 20px 22px}
+    .topline{display:flex;align-items:center;justify-content:space-between;gap:12px}
+    h1{font-size:22px;margin:0;letter-spacing:-.7px}.subtitle{font-size:12px;opacity:.75;margin:4px 0 0}
+    .icon-btn{background:rgba(255,255,255,.16);color:#fff;border-radius:12px;width:38px;height:38px;font-size:18px}
+    main{padding:16px}.section-title{font-size:17px;margin:22px 2px 10px}.section-title:first-child{margin-top:2px}
+    .card{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:16px;box-shadow:var(--shadow)}
+    .grid{display:grid;gap:12px}.grid.two{grid-template-columns:1fr 1fr}.grid.three{grid-template-columns:repeat(3,1fr)}
+    .kpi{padding:13px;border-radius:15px;background:#f0f5f2}.kpi .label{font-size:12px;color:var(--muted)}.kpi strong{font-size:18px;display:block;margin-top:3px;letter-spacing:-.5px}
+    .positive{color:var(--income)}.negative{color:var(--expense)}.amount{font-variant-numeric:tabular-nums}
+    .quick-row{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}.quick{padding:12px 4px;background:#eaf3ef;color:var(--brand-dark);border-radius:14px;font-weight:700;font-size:13px}.quick b{display:block;font-size:20px;line-height:1.1}
+    .budgetbar{height:10px;border-radius:8px;background:#edf0ee;overflow:hidden;margin:7px 0}.budgetbar i{height:100%;display:block;background:var(--brand);border-radius:inherit}.budgetbar.over i{background:var(--danger)}
+    .row{display:flex;align-items:center;justify-content:space-between;gap:12px}.small{font-size:12px;color:var(--muted)}.empty{color:var(--muted);text-align:center;padding:25px 10px}
+    .list{padding:0}.list-item{padding:13px 0;border-bottom:1px solid var(--line)}.list-item:last-child{border-bottom:0}.list-item button{background:none;color:inherit;text-align:left;padding:0;width:100%}
+    .tag{font-size:11px;background:#edf4f1;color:var(--brand-dark);border-radius:6px;padding:2px 6px;white-space:nowrap}
+    nav{position:fixed;z-index:5;bottom:0;left:0;right:0;margin:auto;max-width:740px;display:grid;grid-template-columns:repeat(5,1fr);background:rgba(255,255,255,.97);border-top:1px solid var(--line);padding:8px 4px calc(8px + env(safe-area-inset-bottom));box-shadow:0 -5px 22px rgba(20,50,42,.06)}
+    nav button{color:var(--muted);background:transparent;font-size:10px;padding:4px 0}nav button b{display:block;font-size:20px;line-height:23px;font-weight:500}nav button.active{color:var(--brand);font-weight:800}
+    .fab{position:fixed;z-index:6;bottom:72px;left:50%;transform:translateX(-50%);width:58px;height:58px;border-radius:50%;background:var(--accent);color:#432a00;box-shadow:0 8px 20px rgba(130,87,18,.28);font-size:30px}
+    dialog{border:0;border-radius:22px;box-shadow:0 20px 65px rgba(0,0,0,.3);padding:0;width:min(94vw,560px);max-height:90dvh;background:#fff;color:var(--ink)}
+    dialog::backdrop{background:rgba(10,30,25,.55)}.modal-head{padding:18px 20px 12px;display:flex;justify-content:space-between;align-items:center}.modal-head h2{margin:0;font-size:19px}.close{background:#edf1ee;border-radius:50%;width:32px;height:32px;font-size:19px}.modal-body{padding:4px 20px 22px;overflow:auto;max-height:calc(90dvh - 64px)}
+    label{display:block;font-size:13px;font-weight:700;margin:13px 0 5px}input,select,textarea{width:100%;border:1px solid #cbd9d3;border-radius:10px;padding:11px 12px;color:var(--ink);background:#fff}textarea{resize:vertical;min-height:65px}
+    .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:0 10px}.full{grid-column:1/-1}.choice{display:flex;gap:7px;flex-wrap:wrap;margin:8px 0}.choice button{padding:8px 11px;border-radius:9px;background:#edf2ef;color:var(--ink);font-size:13px}.choice button.selected{background:var(--brand);color:#fff}
+    .btn{border-radius:11px;padding:12px 15px;font-weight:800;background:var(--brand);color:#fff;width:100%;margin-top:18px}.btn.subtle{background:#e6efeb;color:var(--brand-dark)}.btn.danger{background:#fff0f0;color:var(--danger)}.btn.inline{width:auto;margin:0;padding:8px 10px;font-size:12px}
+    .tabbar{display:flex;gap:6px;overflow:auto;margin:0 -2px 14px}.tabbar button{padding:8px 11px;background:#e9efec;border-radius:9px;white-space:nowrap;color:var(--muted);font-size:13px}.tabbar button.active{color:#fff;background:var(--brand)}
+    table{border-collapse:collapse;width:100%;font-size:12px}th{text-align:left;color:var(--muted);font-weight:700;background:#f3f6f4}th,td{padding:9px 7px;border-bottom:1px solid var(--line)}td.right,th.right{text-align:right}.report-table{overflow-x:auto}
+    .account-balance{padding:10px 0;border-bottom:1px solid var(--line)}.account-balance:last-child{border:0}.account-balance button{background:none;width:100%;padding:0;color:inherit;text-align:left}
+    .notice{padding:12px;border-radius:12px;background:#fff6df;color:#65490b;font-size:13px}.lock-screen{min-height:100dvh;display:flex;align-items:center;justify-content:center;background:linear-gradient(145deg,#0d4038,#1b715f);padding:24px}.lock-card{width:min(100%,390px);background:#fff;border-radius:25px;padding:28px;box-shadow:0 18px 45px rgba(0,0,0,.25)}.lock-card h1{font-size:27px}.lock-logo{font-size:38px;margin-bottom:8px}.lock-card p{color:var(--muted);font-size:14px}.lock-card .btn{margin-top:20px}
+    .period{margin-top:17px;display:flex;align-items:center;justify-content:space-between;font-size:13px}.period button{border-radius:8px;padding:6px 10px;background:rgba(255,255,255,.16);color:#fff}.report-summary{background:#e9f3ee;border-radius:12px;padding:13px;text-align:center}.report-summary strong{font-size:20px}
+    @media(max-width:390px){.grid.three{grid-template-columns:1fr 1fr}.quick-row{grid-template-columns:repeat(4,1fr)}.quick{font-size:11px}.kpi strong{font-size:16px}}
+  </style>
+</head>
+<body>
+  <div id="lockScreen" class="lock-screen">
+    <section class="lock-card">
+      <div class="lock-logo">◒</div>
+      <h1>잔고일기</h1>
+      <p id="lockDescription">내 휴대폰 안에서만 관리하는 오프라인 복식 가계부입니다.</p>
+      <label id="pinLabel" for="pin">앱 잠금 비밀번호</label>
+      <input id="pin" type="password" inputmode="numeric" autocomplete="current-password" placeholder="숫자 4자 이상">
+      <label id="confirmLabel" class="hidden" for="pinConfirm">비밀번호 확인</label>
+      <input id="pinConfirm" class="hidden" type="password" inputmode="numeric" autocomplete="new-password" placeholder="한 번 더 입력">
+      <button id="unlockBtn" class="btn">시작하기</button>
+      <p id="lockMessage" class="small"></p>
+      <div class="notice" style="margin-top:18px">비밀번호를 잊으면 장부를 복구할 수 없습니다. 정기적으로 개인 기기에 암호화 백업을 보관하세요.</div>
+    </section>
+  </div>
+
+  <div id="app" class="app hidden">
+    <header>
+      <div class="topline">
+        <div><h1 id="pageTitle">이번 달</h1><p class="subtitle" id="headerSub">나의 돈 흐름을 한눈에</p></div>
+        <button id="lockBtn" class="icon-btn" aria-label="장부 잠금">⌑</button>
+      </div>
+      <div class="period"><button id="prevMonth">‹</button><b id="monthLabel"></b><button id="nextMonth">›</button></div>
+    </header>
+    <main id="view"></main>
+    <button id="addBtn" class="fab" aria-label="거래 추가">＋</button>
+    <nav>
+      <button data-page="home" class="active"><b>⌂</b>홈</button>
+      <button data-page="ledger"><b>▤</b>장부</button>
+      <button data-page="budget"><b>◴</b>예산</button>
+      <button data-page="assets"><b>◈</b>자산</button>
+      <button data-page="reports"><b>▥</b>보고서</button>
+    </nav>
+  </div>
+
+  <dialog id="transactionDialog">
+    <div class="modal-head"><h2 id="txTitle">빠른 거래 입력</h2><button class="close" data-close="transactionDialog">×</button></div>
+    <form id="transactionForm" class="modal-body">
+      <div class="choice" id="txTypeChoice">
+        <button type="button" data-type="expense" class="selected">지출</button>
+        <button type="button" data-type="income">수입</button>
+        <button type="button" data-type="transfer">이체</button>
+        <button type="button" data-type="journal">직접 분개</button>
+      </div>
+      <div class="form-grid">
+        <div><label for="txDate">일자</label><input id="txDate" type="date" required></div>
+        <div><label for="txAmount">금액</label><input id="txAmount" type="number" min="1" inputmode="numeric" placeholder="0" required></div>
+        <div class="full"><label for="txDescription">내용</label><input id="txDescription" maxlength="70" placeholder="예: 점심 식사" required></div>
+        <div id="categoryWrap"><label for="txCategory">분류</label><select id="txCategory"></select></div>
+        <div id="paymentWrap"><label for="txPayment">결제수단</label><select id="txPayment"></select></div>
+        <div id="fromWrap" class="hidden"><label for="txFrom">보내는 곳</label><select id="txFrom"></select></div>
+        <div id="toWrap" class="hidden"><label for="txTo">받는 곳</label><select id="txTo"></select></div>
+        <div id="directWrap" class="full hidden">
+          <div class="form-grid">
+            <div><label for="txDebit">차변 계정</label><select id="txDebit"></select></div>
+            <div><label for="txCredit">대변 계정</label><select id="txCredit"></select></div>
+          </div>
+          <p class="small">차변과 대변에 같은 금액이 자동으로 기록됩니다.</p>
+        </div>
+        <div class="full"><label for="txMemo">메모 <span class="small">(선택)</span></label><textarea id="txMemo" maxlength="200"></textarea></div>
+      </div>
+      <button class="btn" type="submit">복식 전표 저장</button>
+      <button id="deleteTxBtn" class="btn danger hidden" type="button">이 거래 삭제</button>
+    </form>
+  </dialog>
+
+  <dialog id="accountDialog">
+    <div class="modal-head"><h2>계정 추가</h2><button class="close" data-close="accountDialog">×</button></div>
+    <form id="accountForm" class="modal-body">
+      <label for="accountType">계정 구분</label><select id="accountType"><option value="asset">자산</option><option value="liability">부채</option><option value="income">수익</option><option value="expense">비용</option><option value="equity">자본</option></select>
+      <label for="accountName">계정 이름</label><input id="accountName" maxlength="30" placeholder="예: 토스뱅크" required>
+      <button class="btn" type="submit">계정 추가</button>
+    </form>
+  </dialog>
+
+  <dialog id="budgetDialog">
+    <div class="modal-head"><h2>예산 설정</h2><button class="close" data-close="budgetDialog">×</button></div>
+    <form id="budgetForm" class="modal-body">
+      <label for="budgetCategory">지출 분류</label><select id="budgetCategory"></select>
+      <label for="budgetAmount">월 예산</label><input id="budgetAmount" type="number" min="0" inputmode="numeric" placeholder="0" required>
+      <button class="btn" type="submit">예산 저장</button>
+    </form>
+  </dialog>
+
+  <dialog id="settingsDialog">
+    <div class="modal-head"><h2>설정 및 데이터</h2><button class="close" data-close="settingsDialog">×</button></div>
+    <div class="modal-body">
+      <div class="notice">이 장부는 이 기기 안에만 저장됩니다. 브라우저 앱 데이터를 삭제하면 장부도 삭제될 수 있으므로, 중요한 데이터는 백업하세요.</div>
+      <label>암호화 백업</label>
+      <button id="backupBtn" class="btn subtle">백업 파일 저장</button>
+      <label for="restoreFile">암호화 백업 복원</label>
+      <input id="restoreFile" type="file" accept=".json,application/json">
+      <button id="restoreBtn" class="btn subtle">선택한 백업 복원</button>
+      <label>CSV 내보내기</label>
+      <button id="csvBtn" class="btn subtle">분개장 CSV 저장</button>
+      <label>데이터 관리</label>
+      <button id="resetBtn" class="btn danger">모든 장부 데이터 삭제</button>
+    </div>
+  </dialog>
+
+<script>
+(() => {
+  'use strict';
+  const STORAGE_KEY = 'jango-diary-encrypted-v1';
+  const encoder = new TextEncoder(), decoder = new TextDecoder();
+  let state = null, cryptoKey = null, activePage = 'home', cursor = new Date(), editingId = null, currentTxType = 'expense';
+
+  const $ = id => document.getElementById(id);
+  const won = n => new Intl.NumberFormat('ko-KR', {maximumFractionDigits:0}).format(Math.round(n || 0)) + '원';
+  const rawNum = v => Number(v || 0);
+  const dateISO = d => new Date(d.getTime() - d.getTimezoneOffset()*60000).toISOString().slice(0,10);
+  const ym = d => dateISO(d).slice(0,7);
+  const id = () => crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).slice(2);
+  const esc = s => String(s ?? '').replace(/[&<>"']/g, x => ({'&':String.fromCharCode(38)+'amp;','<':String.fromCharCode(38)+'lt;','>':String.fromCharCode(38)+'gt;','"':String.fromCharCode(38)+'quot;',"'":String.fromCharCode(38)+'#39;'}[x]));
+  const typeLabels = {asset:'자산', liability:'부채', income:'수익', expense:'비용', equity:'자본'};
+  const normalDebit = type => ['asset','expense'].includes(type);
+
+  function defaultState() {
+    const accounts = [
+      ['asset','현금'],['asset','입출금통장'],['asset','비상금/적금'],['asset','투자자산'],['asset','보증금'],['asset','받을돈'],
+      ['liability','신용카드미지급금'],['liability','카드할부금'],['liability','대출'],['liability','빌린돈'],
+      ['income','급여'],['income','상여'],['income','부수입'],['income','이자·배당'],['income','환급·기타수입'],
+      ['expense','식비'],['expense','카페·간식'],['expense','교통'],['expense','주거·통신'],['expense','생활용품'],['expense','쇼핑'],['expense','문화·여가'],['expense','의료·건강'],['expense','교육'],['expense','경조사'],['expense','여행'],['expense','보험료'],['expense','기타지출'],
+      ['equity','순자산']
+    ].map(([type,name]) => ({id:id(), type, name, system:true}));
+    return {version:1, createdAt:new Date().toISOString(), accounts, transactions:[], budgets:{}, settings:{autoLock:0}};
+  }
+  function getAccount(aid) { return state.accounts.find(a => a.id === aid); }
+  function accountsOf(type) { return state.accounts.filter(a => a.type === type); }
+  function accountName(aid) { return getAccount(aid)?.name || '(삭제된 계정)'; }
+  function accountOptions(types, selected='') { return state.accounts.filter(a => types.includes(a.type)).map(a => `<option value="${a.id}" ${a.id===selected?'selected':''}>${esc(a.name)}</option>`).join(''); }
+  function balance(aid, until=null) {
+    const a = getAccount(aid); if (!a) return 0;
+    let debit=0, credit=0;
+    state.transactions.forEach(t => { if (!until || t.date <= until) t.lines.forEach(l => {if(l.accountId===aid){debit+=l.debit;credit+=l.credit}}); });
+    return normalDebit(a.type) ? debit-credit : credit-debit;
+  }
+  function monthTransactions() { const key=ym(cursor); return state.transactions.filter(t=>t.date.startsWith(key)); }
+  function expenseFor(aid, period=ym(cursor)) { return state.transactions.filter(t=>t.date.startsWith(period)).reduce((sum,t)=>sum + t.lines.filter(l=>l.accountId===aid).reduce((s,l)=>s+l.debit-l.credit,0),0); }
+  function incomeTotal(period=ym(cursor)) { return state.transactions.filter(t=>t.date.startsWith(period)).reduce((sum,t)=>sum+t.lines.filter(l=>getAccount(l.accountId)?.type==='income').reduce((s,l)=>s+l.credit-l.debit,0),0); }
+  function expenseTotal(period=ym(cursor)) { return accountsOf('expense').reduce((s,a)=>s+expenseFor(a.id,period),0); }
+  function assetTotal(until=dateISO(new Date())) { return accountsOf('asset').reduce((s,a)=>s+balance(a.id,until),0); }
+  function liabilityTotal(until=dateISO(new Date())) { return accountsOf('liability').reduce((s,a)=>s+balance(a.id,until),0); }
+
+  async function deriveKey(pin, salt) {
+    const material = await crypto.subtle.importKey('raw', encoder.encode(pin), 'PBKDF2', false, ['deriveKey']);
+    return crypto.subtle.deriveKey({name:'PBKDF2',salt,iterations:210000,hash:'SHA-256'}, material, {name:'AES-GCM',length:256}, false, ['encrypt','decrypt']);
+  }
+  function b64(bytes) { return btoa(String.fromCharCode(...new Uint8Array(bytes))); }
+  function unb64(text) { return Uint8Array.from(atob(text), c=>c.charCodeAt(0)); }
+  async function save() {
+    if (!state || !cryptoKey) return;
+    const iv = crypto.getRandomValues(new Uint8Array(12));
+    const encrypted = await crypto.subtle.encrypt({name:'AES-GCM',iv},cryptoKey,encoder.encode(JSON.stringify(state)));
+    const old = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({v:1,salt:old.salt,iv:b64(iv),data:b64(encrypted),updatedAt:new Date().toISOString()}));
+  }
+  async function unlock(pin, creating=false) {
+    if (pin.length < 4) throw new Error('비밀번호는 숫자 4자 이상으로 입력하세요.');
+    let stored = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
+    if (creating) {
+      const salt=crypto.getRandomValues(new Uint8Array(16)); cryptoKey=await deriveKey(pin,salt); state=defaultState();
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({v:1,salt:b64(salt)})); await save();
+    } else {
+      cryptoKey=await deriveKey(pin,unb64(stored.salt));
+      const plain=await crypto.subtle.decrypt({name:'AES-GCM',iv:unb64(stored.iv)},cryptoKey,unb64(stored.data));
+      state=JSON.parse(decoder.decode(plain));
+    }
+    $('lockScreen').classList.add('hidden'); $('app').classList.remove('hidden'); render();
+  }
+
+  function header(page) {
+    const titles={home:'이번 달',ledger:'분개장',budget:'예산 관리',assets:'자산 · 부채',reports:'복식부기 보고서'};
+    $('pageTitle').textContent=titles[page]; $('headerSub').textContent=page==='home'?'돈이 어디로 흐르는지 확인하세요':'모든 금액은 차변과 대변이 일치합니다.';
+    $('monthLabel').textContent=`${cursor.getFullYear()}년 ${cursor.getMonth()+1}월`;
+  }
+  function render() {
+    if(!state) return; header(activePage);
+    document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('active',b.dataset.page===activePage));
+    const renderers={home:renderHome,ledger:renderLedger,budget:renderBudget,assets:renderAssets,reports:renderReports};
+    $('view').innerHTML=renderers[activePage]();
+    attachViewEvents();
+  }
+  function renderHome() {
+    const period=ym(cursor), income=incomeTotal(period), expense=expenseTotal(period), asset=assetTotal(), liability=liabilityTotal(), net=asset-liability;
+    const budgetRows=Object.entries(state.budgets[period]||{}).filter(([,v])=>v>0).map(([aid,limit])=>{const used=expenseFor(aid,period), ratio=Math.min(100,Math.round(used/limit*100));return `<div class="list-item"><div class="row"><span>${esc(accountName(aid))}</span><b class="${used>limit?'negative':''}">${won(used)} <span class="small">/ ${won(limit)}</span></b></div><div class="budgetbar ${used>limit?'over':''}"><i style="width:${ratio}%"></i></div><div class="small">${used>limit?won(used-limit)+' 초과':won(limit-used)+' 남음'} · ${ratio}% 사용</div></div>`}).join('') || '<div class="empty">이번 달 예산을 설정하면 소비 흐름을 더 잘 볼 수 있어요.</div>';
+    const recent=[...monthTransactions()].sort((a,b)=>b.date.localeCompare(a.date)).slice(0,5).map(txRow).join('') || '<div class="empty">이번 달 거래가 아직 없어요.<br>아래 + 버튼으로 첫 거래를 기록해 보세요.</div>';
+    return `
+      <section class="grid three">
+        <article class="kpi"><span class="label">이번 달 수입</span><strong class="positive amount">${won(income)}</strong></article>
+        <article class="kpi"><span class="label">이번 달 지출</span><strong class="negative amount">${won(expense)}</strong></article>
+        <article class="kpi"><span class="label">이번 달 순저축</span><strong class="${income-expense>=0?'positive':'negative'} amount">${won(income-expense)}</strong></article>
+      </section>
+      <h2 class="section-title">빠른 기록</h2>
+      <section class="quick-row"><button class="quick" data-quick="expense"><b>−</b>지출</button><button class="quick" data-quick="income"><b>＋</b>수입</button><button class="quick" data-quick="transfer"><b>⇄</b>이체</button><button class="quick" data-quick="journal"><b>≡</b>분개</button></section>
+      <h2 class="section-title">내 순자산</h2><section class="card"><div class="row"><div><div class="small">자산 ${won(asset)} − 부채 ${won(liability)}</div><strong class="amount" style="font-size:25px">${won(net)}</strong></div><button class="btn inline" data-go="assets">자세히</button></div></section>
+      <h2 class="section-title">예산 현황</h2><section class="card list">${budgetRows}</section>
+      <h2 class="section-title">최근 거래</h2><section class="card list">${recent}</section>`;
+  }
+  function txRow(t) {
+    const main=t.lines.find(l=>getAccount(l.accountId)?.type==='expense') || t.lines.find(l=>getAccount(l.accountId)?.type==='income') || t.lines[0];
+    const a=getAccount(main?.accountId), sign=a?.type==='income'?'+':a?.type==='expense'?'-':'⇄', cls=a?.type==='income'?'positive':a?.type==='expense'?'negative':'';
+    return `<div class="list-item"><button data-edit-tx="${t.id}"><div class="row"><div><b>${esc(t.description)}</b><div class="small">${t.date} · ${esc(a?.name||'복식전표')}</div></div><strong class="${cls} amount">${sign} ${won(main?.debit||main?.credit)}</strong></div></button></div>`;
+  }
+  function renderLedger() {
+    const txs=[...monthTransactions()].sort((a,b)=>b.date.localeCompare(a.date));
+    return `<div class="tabbar"><button class="active">${cursor.getFullYear()}년 ${cursor.getMonth()+1}월 거래</button><button data-open="transactionDialog">직접 분개</button></div>
+    <section class="card list">${txs.map(txRow).join('')||'<div class="empty">조회 기간의 분개가 없습니다.</div>'}</section>
+    <p class="small" style="padding:0 4px">거래를 누르면 내용을 수정하거나 삭제할 수 있습니다. 모든 전표는 차변과 대변이 같은 금액으로 저장됩니다.</p>`;
+  }
+  function renderBudget() {
+    const period=ym(cursor), budgets=state.budgets[period]||{}, rows=accountsOf('expense').map(a=>{const limit=rawNum(budgets[a.id]), used=expenseFor(a.id,period);if(!limit && !used)return '';return `<div class="list-item"><div class="row"><span>${esc(a.name)}</span><b class="${limit&&used>limit?'negative':''}">${won(used)} <span class="small">/ ${limit?won(limit):'미설정'}</span></b></div>${limit?`<div class="budgetbar ${used>limit?'over':''}"><i style="width:${Math.min(100,used/limit*100)}%"></i></div>`:''}<div class="row"><span class="small">${limit?(used>limit?won(used-limit)+' 초과':won(limit-used)+' 남음'):'예산을 설정해 보세요'}</span><button class="btn inline" data-edit-budget="${a.id}">${limit?'수정':'설정'}</button></div></div>`}).filter(Boolean).join('');
+    const totalLimit=Object.values(budgets).reduce((s,v)=>s+rawNum(v),0), totalUsed=expenseTotal(period);
+    return `<section class="card"><div class="row"><div><span class="small">이번 달 전체 예산</span><strong style="display:block;font-size:22px">${won(totalLimit)}</strong></div><div class="right"><span class="small">현재 지출</span><strong class="negative" style="display:block;font-size:18px">${won(totalUsed)}</strong></div></div><div class="budgetbar ${totalLimit&&totalUsed>totalLimit?'over':''}"><i style="width:${totalLimit?Math.min(100,totalUsed/totalLimit*100):0}%"></i></div></section>
+      <h2 class="section-title">항목별 예산</h2><section class="card list">${rows||'<div class="empty">아직 예산이 없습니다.</div>'}</section>
+      <button class="btn" data-open-budget>＋ 예산 항목 추가</button>`;
+  }
+  function renderAssets() {
+    const sections=['asset','liability'].map(type=>{const rows=accountsOf(type).map(a=>`<div class="account-balance"><button data-ledger-account="${a.id}"><div class="row"><span>${esc(a.name)}</span><b class="amount ${type==='liability'?'negative':''}">${won(balance(a.id))}</b></div></button></div>`).join(''); const sum=accountsOf(type).reduce((s,a)=>s+balance(a.id),0);return `<section class="card"><div class="row"><h2 style="margin:0;font-size:16px">${typeLabels[type]}</h2><strong class="${type==='liability'?'negative':''}">${won(sum)}</strong></div><div class="list">${rows}</div></section>`}).join('<h2 class="section-title">부채</h2>');
+    const net=assetTotal()-liabilityTotal();
+    return `<section class="report-summary"><span class="small">순자산 · 자산 − 부채</span><strong>${won(net)}</strong></section><h2 class="section-title">자산</h2>${sections}<button class="btn" data-open="accountDialog">＋ 계정 추가</button><p class="small">계정을 누르면 해당 계정의 원장 내역을 볼 수 있습니다.</p>`;
+  }
+  function renderReports() {
+    const period=ym(cursor), income=incomeTotal(period), expense=expenseTotal(period), assets=assetTotal(), liabilities=liabilityTotal(), equity=assets-liabilities;
+    return `<div class="tabbar"><button class="active" data-report="income">손익</button><button data-report="position">재무상태</button><button data-report="trial">시산표</button></div>
+      <div id="reportContent">${reportIncome(income,expense)}</div>`;
+  }
+  function reportIncome(income,expense) {
+    const rows=type=>accountsOf(type).map(a=>{const val=type==='income'?state.transactions.filter(t=>t.date.startsWith(ym(cursor))).reduce((s,t)=>s+t.lines.filter(l=>l.accountId===a.id).reduce((x,l)=>x+l.credit-l.debit,0),0):expenseFor(a.id);return val?`<tr><td>${esc(a.name)}</td><td class="right">${won(val)}</td></tr>`:''}).join('')||'<tr><td colspan="2" class="small">거래 없음</td></tr>';
+    return `<section class="report-summary"><span class="small">이번 달 순저축</span><strong class="${income-expense>=0?'positive':'negative'}">${won(income-expense)}</strong></section><h2 class="section-title">수입</h2><div class="card report-table"><table><tbody>${rows('income')}<tr><th>수입 합계</th><th class="right">${won(income)}</th></tr></tbody></table></div><h2 class="section-title">지출</h2><div class="card report-table"><table><tbody>${rows('expense')}<tr><th>지출 합계</th><th class="right">${won(expense)}</th></tr></tbody></table></div>`;
+  }
+  function reportPosition() {
+    const rows=type=>accountsOf(type).map(a=>`<tr><td>${esc(a.name)}</td><td class="right">${won(balance(a.id))}</td></tr>`).join('');
+    return `<section class="report-summary"><span class="small">순자산</span><strong>${won(assetTotal()-liabilityTotal())}</strong></section><h2 class="section-title">자산</h2><div class="card report-table"><table><tbody>${rows('asset')}<tr><th>자산 합계</th><th class="right">${won(assetTotal())}</th></tr></tbody></table></div><h2 class="section-title">부채</h2><div class="card report-table"><table><tbody>${rows('liability')}<tr><th>부채 합계</th><th class="right">${won(liabilityTotal())}</th></tr></tbody></table></div>`;
+  }
+  function reportTrial() {
+    const rows=state.accounts.map(a=>{let d=0,c=0;state.transactions.forEach(t=>t.lines.forEach(l=>{if(l.accountId===a.id){d+=l.debit;c+=l.credit}}));return d||c?`<tr><td>${esc(a.name)}</td><td class="right">${won(d)}</td><td class="right">${won(c)}</td></tr>`:''}).join('')||'<tr><td colspan="3">거래 없음</td></tr>';
+    let td=0,tc=0;state.transactions.forEach(t=>t.lines.forEach(l=>{td+=l.debit;tc+=l.credit}));
+    return `<div class="notice">차변 합계와 대변 합계가 같으면 장부가 균형 상태입니다.</div><h2 class="section-title">전체 시산표</h2><div class="card report-table"><table><thead><tr><th>계정</th><th class="right">차변</th><th class="right">대변</th></tr></thead><tbody>${rows}<tr><th>합계</th><th class="right">${won(td)}</th><th class="right">${won(tc)}</th></tr></tbody></table></div>`;
+  }
+  function attachViewEvents() {
+    document.querySelectorAll('[data-quick]').forEach(b=>b.onclick=()=>openTx(b.dataset.quick));
+    document.querySelectorAll('[data-open]').forEach(b=>b.onclick=()=>$(b.dataset.open).showModal());
+    document.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>{activePage=b.dataset.go;render()});
+    document.querySelectorAll('[data-edit-tx]').forEach(b=>b.onclick=()=>openTx(null,b.dataset.editTx));
+    document.querySelectorAll('[data-edit-budget]').forEach(b=>b.onclick=()=>openBudget(b.dataset.editBudget));
+    document.querySelector('[data-open-budget]')?.addEventListener('click',()=>openBudget());
+    document.querySelectorAll('[data-ledger-account]').forEach(b=>b.onclick=()=>showAccountLedger(b.dataset.ledgerAccount));
+    document.querySelectorAll('[data-report]').forEach(b=>b.onclick=()=>{document.querySelectorAll('[data-report]').forEach(x=>x.classList.remove('active'));b.classList.add('active');$('reportContent').innerHTML=b.dataset.report==='income'?reportIncome(incomeTotal(),expenseTotal()):b.dataset.report==='position'?reportPosition():reportTrial()});
+  }
+  function fillTxSelects() {
+    $('txCategory').innerHTML=accountOptions(['expense','income']);
+    $('txPayment').innerHTML=accountOptions(['asset','liability']);
+    $('txFrom').innerHTML=accountOptions(['asset','liability']);
+    $('txTo').innerHTML=accountOptions(['asset','liability']);
+    $('txDebit').innerHTML=accountOptions(['asset','expense','liability','income','equity']);
+    $('txCredit').innerHTML=accountOptions(['asset','expense','liability','income','equity']);
+  }
+  function setupType(type) {
+    currentTxType=type; document.querySelectorAll('#txTypeChoice button').forEach(b=>b.classList.toggle('selected',b.dataset.type===type));
+    const expense=type==='expense',income=type==='income',transfer=type==='transfer',journal=type==='journal';
+    $('categoryWrap').classList.toggle('hidden',transfer||journal); $('paymentWrap').classList.toggle('hidden',transfer||journal);
+    $('fromWrap').classList.toggle('hidden',!transfer); $('toWrap').classList.toggle('hidden',!transfer); $('directWrap').classList.toggle('hidden',!journal);
+    $('txCategory').innerHTML=accountOptions(expense?['expense']:income?['income']:['expense','income']);
+    $('txPayment').innerHTML=accountOptions(['asset','liability']);
+  }
+  function openTx(type='expense', txId=null) {
+    fillTxSelects(); editingId=txId; $('transactionForm').reset(); $('txDate').value=dateISO(new Date()); $('deleteTxBtn').classList.toggle('hidden',!txId);
+    if(txId) {
+      const t=state.transactions.find(x=>x.id===txId); if(!t)return;
+      $('txTitle').textContent='거래 수정';$('txDate').value=t.date;$('txDescription').value=t.description;$('txMemo').value=t.memo||'';
+      const debit=t.lines.find(l=>l.debit>0),credit=t.lines.find(l=>l.credit>0), da=getAccount(debit.accountId),ca=getAccount(credit.accountId);
+      $('txAmount').value=debit.debit;
+      if(da?.type==='expense'){setupType('expense');$('txCategory').value=da.id;$('txPayment').value=credit.accountId}
+      else if(ca?.type==='income'){setupType('income');$('txCategory').value=ca.id;$('txPayment').value=debit.accountId}
+      else {setupType('journal');$('txDebit').value=debit.accountId;$('txCredit').value=credit.accountId}
+    } else { $('txTitle').textContent='빠른 거래 입력';setupType(type); }
+    $('transactionDialog').showModal();
+  }
+  function openBudget(aid='') {$('budgetCategory').innerHTML=accountOptions(['expense'],aid);$('budgetAmount').value=aid?(state.budgets[ym(cursor)]||{})[aid]||'':'';$('budgetDialog').showModal();}
+  function showAccountLedger(aid) {
+    const a=getAccount(aid), rows=[...state.transactions].filter(t=>t.lines.some(l=>l.accountId===aid)).sort((x,y)=>y.date.localeCompare(x.date)).map(t=>{const l=t.lines.find(x=>x.accountId===aid);return `<tr><td>${t.date}</td><td>${esc(t.description)}</td><td class="right">${l.debit?won(l.debit):'-'}</td><td class="right">${l.credit?won(l.credit):'-'}</td></tr>`}).join('')||'<tr><td colspan="4">내역 없음</td></tr>';
+    $('view').innerHTML=`<button class="btn subtle" style="margin:0 0 14px" id="backAssets">← 자산 · 부채로</button><h2 class="section-title" style="margin-top:0">${esc(a.name)} 원장</h2><section class="card report-table"><table><thead><tr><th>일자</th><th>내용</th><th class="right">차변</th><th class="right">대변</th></tr></thead><tbody>${rows}</tbody></table></section>`;$('backAssets').onclick=render;
+  }
+
+  async function submitTransaction(e) {
+    e.preventDefault();
+    const amount=rawNum($('txAmount').value), date=$('txDate').value, description=$('txDescription').value.trim(), memo=$('txMemo').value.trim();
+    if(!amount||!date||!description)return;
+    let debit,credit;
+    if(currentTxType==='expense'){debit=$('txCategory').value;credit=$('txPayment').value}
+    if(currentTxType==='income'){debit=$('txPayment').value;credit=$('txCategory').value}
+    if(currentTxType==='transfer'){debit=$('txTo').value;credit=$('txFrom').value;if(debit===credit){alert('보내는 곳과 받는 곳을 다르게 선택하세요.');return;}}
+    if(currentTxType==='journal'){debit=$('txDebit').value;credit=$('txCredit').value;if(debit===credit){alert('차변과 대변 계정을 다르게 선택하세요.');return;}}
+    if(!debit||!credit){alert('계정을 선택해 주세요.');return;}
+    const tx={id:editingId||id(),date,description,memo,createdAt:new Date().toISOString(),lines:[{accountId:debit,debit:amount,credit:0},{accountId:credit,debit:0,credit:amount}]};
+    if(editingId) state.transactions=state.transactions.map(t=>t.id===editingId?tx:t);else state.transactions.push(tx);
+    await save();$('transactionDialog').close();render();
+  }
+  async function submitAccount(e){e.preventDefault();const name=$('accountName').value.trim(),type=$('accountType').value;if(!name)return;if(state.accounts.some(a=>a.name===name)){alert('같은 이름의 계정이 이미 있습니다.');return;}state.accounts.push({id:id(),type,name,system:false});await save();$('accountDialog').close();render();}
+  async function submitBudget(e){e.preventDefault();const period=ym(cursor),aid=$('budgetCategory').value,amount=rawNum($('budgetAmount').value);state.budgets[period]??={};state.budgets[period][aid]=amount;await save();$('budgetDialog').close();render();}
+
+  async function backup() {
+    const exportData={format:'jango-diary-backup',version:1,exportedAt:new Date().toISOString(),payload:JSON.parse(localStorage.getItem(STORAGE_KEY))};
+    download('잔고일기_암호화백업_'+dateISO(new Date())+'.json',JSON.stringify(exportData,null,2),'application/json');
+  }
+  async function restore() {
+    const file=$('restoreFile').files[0];if(!file){alert('복원할 백업 파일을 선택하세요.');return;}if(!confirm('현재 장부를 선택한 백업으로 완전히 바꿉니다. 계속할까요?'))return;
+    try{const data=JSON.parse(await file.text());if(data.format!=='jango-diary-backup'||!data.payload?.data)throw Error();localStorage.setItem(STORAGE_KEY,JSON.stringify(data.payload));cryptoKey=null;state=null;$('settingsDialog').close();$('app').classList.add('hidden');$('lockScreen').classList.remove('hidden');configureLock();alert('백업을 복원했습니다. 백업 시 사용한 비밀번호로 잠금을 해제하세요.');}catch{alert('올바른 잔고일기 백업 파일이 아닙니다.');}
+  }
+  function csv() {
+    const rows=[['일자','내용','메모','차변 계정','차변 금액','대변 계정','대변 금액']];[...state.transactions].sort((a,b)=>a.date.localeCompare(b.date)).forEach(t=>{const d=t.lines.find(l=>l.debit),c=t.lines.find(l=>l.credit);rows.push([t.date,t.description,t.memo||'',accountName(d.accountId),d.debit,accountName(c.accountId),c.credit]);});download('잔고일기_분개장_'+dateISO(new Date())+'.csv','\uFEFF'+rows.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n'),'text/csv;charset=utf-8');
+  }
+  function download(name,text,type){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([text],{type}));a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}
+  function configureLock() {const exists=!!localStorage.getItem(STORAGE_KEY);$('lockDescription').textContent=exists?'비밀번호를 입력해 개인 장부를 여세요.':'이 휴대폰 안에만 저장되는 복식 가계부를 시작합니다.';$('confirmLabel').classList.toggle('hidden',exists);$('pinConfirm').classList.toggle('hidden',exists);$('pinLabel').textContent=exists?'앱 잠금 비밀번호':'새 앱 잠금 비밀번호';$('unlockBtn').textContent=exists?'장부 열기':'장부 만들기';}
+  function events() {
+    $('unlockBtn').onclick=async()=>{const message=$('lockMessage'),pin=$('pin').value,exists=!!localStorage.getItem(STORAGE_KEY);message.textContent='';try{if(!window.crypto?.subtle)throw Error('이 브라우저는 안전한 암호화 기능을 지원하지 않습니다. Android Chrome에서 앱을 열어 주세요.');if(!exists&&pin!==$('pinConfirm').value)throw Error('비밀번호 확인이 일치하지 않습니다.');await unlock(pin,!exists);$('pin').value='';$('pinConfirm').value='';}catch(err){cryptoKey=null;message.textContent=err.message||'비밀번호가 맞지 않거나 장부를 읽을 수 없습니다.';}};
+    $('pin').addEventListener('keydown',e=>{if(e.key==='Enter')$('unlockBtn').click()});
+    $('lockBtn').onclick=()=>{state=null;cryptoKey=null;$('app').classList.add('hidden');$('lockScreen').classList.remove('hidden');configureLock();};
+    $('addBtn').onclick=()=>openTx('expense');
+    document.querySelectorAll('[data-close]').forEach(b=>b.onclick=()=>$(b.dataset.close).close());
+    $('transactionForm').onsubmit=submitTransaction;$('accountForm').onsubmit=submitAccount;$('budgetForm').onsubmit=submitBudget;
+    document.querySelectorAll('#txTypeChoice button').forEach(b=>b.onclick=()=>setupType(b.dataset.type));
+    $('deleteTxBtn').onclick=async()=>{if(editingId&&confirm('이 거래를 삭제할까요?')){state.transactions=state.transactions.filter(t=>t.id!==editingId);await save();$('transactionDialog').close();render();}};
+    $('prevMonth').onclick=()=>{cursor.setMonth(cursor.getMonth()-1);render()};$('nextMonth').onclick=()=>{cursor.setMonth(cursor.getMonth()+1);render()};
+    document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{activePage=b.dataset.page;render()});
+    $('backupBtn').onclick=backup;$('restoreBtn').onclick=restore;$('csvBtn').onclick=csv;
+    $('resetBtn').onclick=()=>{if(confirm('정말 모든 장부 데이터를 삭제할까요? 이 작업은 되돌릴 수 없습니다.')&&confirm('마지막 확인입니다. 백업 없이 삭제하시겠습니까?')){localStorage.removeItem(STORAGE_KEY);$('settingsDialog').close();$('lockBtn').click();}};
+    document.addEventListener('keydown',e=>{if(e.key==='Escape')document.querySelectorAll('dialog[open]').forEach(d=>d.close())});
+    const settingButton=document.createElement('button');settingButton.className='icon-btn';settingButton.textContent='⚙';settingButton.setAttribute('aria-label','설정');settingButton.onclick=()=>$('settingsDialog').showModal();document.querySelector('.topline').append(settingButton);
+  }
+  configureLock();events();
+  if ('serviceWorker' in navigator) window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));
+})();
+</script>
+</body>
+</html>

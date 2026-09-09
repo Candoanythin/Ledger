@@ -1,0 +1,19 @@
+{
+  "name": "잔고일기 - 오프라인 복식 가계부",
+  "short_name": "잔고일기",
+  "description": "개인 기기에만 저장되는 오프라인 복식부기 가계부",
+  "lang": "ko",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#f6f7f3",
+  "theme_color": "#163e38",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
