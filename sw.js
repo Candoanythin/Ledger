@@ -1,4 +1,4 @@
-const CACHE_NAME = 'jango-diary-v7';
+const CACHE_NAME = 'jango-diary-v13';
 const APP_FILES = [
   './',
   './index.html',
