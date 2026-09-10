@@ -1,9 +1,10 @@
-const CACHE_NAME = 'jango-diary-v3';
+const CACHE_NAME = 'jango-diary-v4';
 const APP_FILES = [
   './',
   './index.html',
   './manifest.webmanifest',
-  './icon.svg'
+  './icon.svg',
+  './vendor/xlsx.full.min.js'
 ];
 
 self.addEventListener('install', (event) => {
