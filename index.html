@@ -204,7 +204,7 @@ async function pdfText(buf){
  for(const seg of segments){
   const texts=seg.match(/\((?:\.|[^\()])*\)/g)||[];
   if(texts.length){
-   const decoded=texts.map(s=>s.slice(1,-1).replace(/\([nrtbf()\\])/g,(_,c)=>({n:'\n',r:'\r',t:'\t',b:'\b',f:'\f','(':'(',')':')','\\':'\\'}[c]||c)));
+const decoded=texts.map(s=>s.slice(1,-1).replace(/\\[nrtbf()\\]/g,(_,c)=>({n:'\n',r:'\r',t:'\t',b:'\b',f:'\f','(':'(',')':')','\\':'\\'}[c]||c)));
    parts.push(decoded.join(' '));
   }
  }
