@@ -34,7 +34,7 @@
   <dialog id="accountDialog"><div class="modal-head"><h2>계정 추가</h2><button class="close" data-close="accountDialog">×</button></div><form id="accountForm" class="modal-body"><label for="accountType">대분류</label><select id="accountType"><option value="asset">자산</option><option value="liability">부채</option><option value="income">수익</option><option value="expense">비용</option><option value="equity">자본</option></select><label for="accountGroup">중분류</label><input id="accountGroup" maxlength="30" placeholder="예: 반려동물, 업무비"><label for="accountName">세부분류(계정 이름)</label><input id="accountName" maxlength="30" required placeholder="예: 사료, 문구"><button class="btn" type="submit">계정 추가</button></form></dialog>
   <dialog id="budgetDialog"><div class="modal-head"><h2>예산 설정</h2><button class="close" data-close="budgetDialog">×</button></div><form id="budgetForm" class="modal-body"><label for="budgetCategory">지출 분류</label><select id="budgetCategory"></select><label for="budgetAmount">월 예산</label><input id="budgetAmount" type="number" min="0" inputmode="numeric" required><button class="btn" type="submit">예산 저장</button></form></dialog>
 
-  <dialog id="importDialog"><div class="modal-head"><h2>카드 명세서 가져오기</h2><button class="close" data-close="importDialog">×</button></div><div class="modal-body"><div class="info"><b>파일은 이 기기 브라우저 안에서만 읽습니다.</b><br>명세서는 서버·GitHub·외부 AI로 전송되지 않습니다. 여러 달·여러 카드 파일을 한 번에 선택해도 됩니다.</div><label for="statementFiles">명세서 파일 선택</label><input id="statementFiles" type="file" multiple accept=".xls,.xlsx,.csv,.html,.htm,text/csv"><p class="small">HTML 형식 XLS 및 CSV/텍스트 형식 XLS는 자동 분석합니다. 구형 Excel 바이너리 XLS는 개인정보 보호를 위해 외부 라이브러리를 쓰지 않으므로, Excel에서 <b>다른 이름으로 저장 → CSV UTF-8</b> 후 가져오면 됩니다.</p><button id="parseStatementsBtn" class="btn">선택한 명세서 분석</button><div id="importResult"></div></div></dialog>
+  <dialog id="importDialog"><div class="modal-head"><h2>카드 명세서 가져오기</h2><button class="close" data-close="importDialog">×</button></div><div class="modal-body"><div class="info"><b>파일은 이 기기 브라우저 안에서만 읽습니다.</b><br>명세서는 서버·GitHub·외부 AI로 전송되지 않습니다. 여러 달·여러 카드 파일을 한 번에 선택해도 됩니다.</div><label for="statementFiles">명세서 파일 선택</label><input id="statementFiles" type="file" multiple accept=".pdf,.xls,.xlsx,.csv,.html,.htm,text/csv"><p class="small">PDF·HTML·CSV·텍스트 형식은 자동 분석합니다. Excel 바이너리 XLS는 개인정보 보호를 위해 외부 라이브러리를 쓰지 않으므로, Excel에서 <b>다른 이름으로 저장 → CSV UTF-8</b> 후 가져오면 됩니다. (스캔된 이미지 PDF는 텍스트가 없어 분석되지 않습니다.)</p><button id="parseStatementsBtn" class="btn">선택한 명세서 분석</button><div id="importResult"></div></div></dialog>
 
   <dialog id="reviewDialog"><div class="modal-head"><h2>가져온 내역 검토</h2><button class="close" data-close="reviewDialog">×</button></div><div class="modal-body"><div class="notice">간편결제(Pay)는 자동 전표 처리하지 않습니다. 실제 비용 항목을 선택한 후 반영하세요. 일반 거래도 분류를 바꿀 수 있습니다.</div><div id="reviewList"></div><div class="review-actions"><button id="postSelectedBtn" class="btn">선택 내역을 복식 전표로 반영</button></div></div></dialog>
 
@@ -181,6 +181,38 @@ async function submitTransaction(e){e.preventDefault();const amount=rawNum($('tx
 function openBudget(a=''){$('budgetCategory').innerHTML=options(['expense'],a);$('budgetAmount').value=a?(state.budgets[ym(cursor)]||{})[a]||'':'';$('budgetDialog').showModal()}
 
 /* 명세서 파싱: 모든 작업은 브라우저 메모리에서 수행하며 원본 파일은 저장하지 않습니다. */
+async function pdfText(buf){
+ const bytes=new Uint8Array(buf),latin=new TextDecoder('latin1').decode(bytes);
+ const chunks=[];let pos=0;
+ while(true){
+  const s=latin.indexOf('stream',pos);if(s<0)break;
+  let start=s+6;
+  while(start<latin.length&&(latin[start]==='\r'||latin[start]==='\n'))start++;
+  const e=latin.indexOf('endstream',start);if(e<0)break;
+  const raw=latin.slice(start,e);
+  const rawBytes=Uint8Array.from(raw,c=>c.charCodeAt(0)&0xFF);
+  let decoded='';
+  try{decoded=await new Response(new Blob([rawBytes]).stream().pipeThrough(new DecompressionStream('deflate'))).text()}
+  catch{try{decoded=await new Response(new Blob([rawBytes]).stream().pipeThrough(new DecompressionStream('deflate-raw'))).text()}catch{decoded=raw}}
+  if(/[Tj]|TJ|(?:^|[^A-Za-z])(?:Td|TD|Tm|T\*)|(?:^|[^A-Za-z])BT/.test(decoded))chunks.push(decoded);
+  pos=e+9;
+ }
+ const content=chunks.join('\n');
+ const parts=[];
+ const segments=content.split(/(?:^|[^A-Za-z])(?:BT|ET|Td|TD|Tm|T\*)(?:[^A-Za-z]|$)/);
+ for(const seg of segments){
+  const texts=seg.match(/\((?:\.|[^\()])*\)/g)||[];
+  if(texts.length){
+   const decoded=texts.map(s=>s.slice(1,-1).replace(/\([nrtbf()\\])/g,(_,c)=>({n:'\n',r:'\r',t:'\t',b:'\b',f:'\f','(':'(',')':')','\\':'\\'}[c]||c)));
+   parts.push(decoded.join(' '));
+  }
+ }
+ const out=parts.join('\n');
+ return out||clean(content).replace(/\s+/g,' ');
+}
+function pdfRows(text){
+ return text.split(/\n/).map(l=>l.split(/\s{2,}/).map(x=>clean(x))).filter(r=>r.some(Boolean));
+}
 function decodeBuffer(buf){const bytes=new Uint8Array(buf),utf=new TextDecoder('utf-8').decode(bytes),kr=new TextDecoder('euc-kr').decode(bytes);const score=s=>(s.match(/[가-힣]/g)||[]).length-(s.match(/\uFFFD|Ã|Â|ì|ë/g)||[]).length;return score(kr)>score(utf)?kr:utf}
 function clean(s){return String(s??'').replace(/\u00a0/g,' ').replace(/\s+/g,' ').trim()}
 function tableRows(html){const doc=new DOMParser().parseFromString(html,'text/html');return [...doc.querySelectorAll('tr')].map(tr=>[...tr.children].filter(cell=>/^(TH|TD)$/.test(cell.tagName)).map(cell=>clean(cell.textContent))).filter(r=>r.some(Boolean))}
